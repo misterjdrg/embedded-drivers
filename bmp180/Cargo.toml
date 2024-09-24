@@ -1,0 +1,21 @@
+[package]
+name = "edrv-bmp180"
+documentation = "https://docs.rs/edrv-bmp180"
+description = "Driver for BMP180 and BMP085, maintained by the embedded-drivers team"
+keywords = ["no-std", "embedded", "embedded-hal-driver"]
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+embedded-hal.workspace = true
+micromath = "2"
+
+[features]
+default = []
+std = []
