@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["hmc5883l", "adxl345", "l3g4200d"]
+
+exclude = ["template"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+authors = ["Andelf <andelf@gmail.com>"]
+repository = "https://github.com/embedded-drivers/embedded-drivers"
+homepage = "https://github.com/embedded-drivers/embedded-drivers"
+license = "MIT/Apache-2.0"
+categories = ["no-std", "hardware-support", "embedded"]
+
+[workspace.dependencies]
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
+embedded-graphics-core = "0.4.0"

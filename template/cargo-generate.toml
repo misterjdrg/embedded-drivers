@@ -1,0 +1,5 @@
+[template]
+cargo_generate_version = ">0.10.0"
+
+[placeholders]
+chip_name = { prompt = "Enter chip name(e.g. BME680)", type = "string" }
