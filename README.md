@@ -1,10 +1,16 @@
 # embedded-drivers
 
-WIP: The homepage for embedded-drivers team.
-
 embedded-hal compatible drivers for various sensors, displays, and IC modules.
 
-## Why another driver crate?
+NOTE: To help with branding and avoid conflicts, all drivers are prefixed with `edrv-`.
+
+## Driver Collections
+
+WIP.
+
+## Motivation
+
+### Why another driver crate?
 
 - Rust embedded driver libraries are always outdated
 - Most of them are not compatible with the newest embedded-hal, say v1 and v0.2
@@ -21,7 +27,7 @@ embedded-hal compatible drivers for various sensors, displays, and IC modules.
 
 A unified org is required to handle the situation.
 
-## Goals
+### Goals
 
 Being the "Adafruit" of Rust embedded ecosystem, providing the most up-to-date, easy-to-use, and well-documented driver libraries for different kinds of sensors, displays, or IC modules.
 
@@ -34,3 +40,17 @@ Being the "Adafruit" of Rust embedded ecosystem, providing the most up-to-date, 
 - **Resource-conscious**: Optimized for size and speed, essential for embedded environments.
 - **Advanced features**: Harness DMA, interrupts, and async/await for optimal performance.
 - **Coherent ecosystem**: Seamless compatibility between drivers, ensuring smooth project integration.
+
+## License
+
+All crates within this Github Organization(embedded-drivers) are licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+
+at your option.
+
+## Contribution Guide
+
+We welcome all kinds of contributions from the community to help improve and expand our collection of embedded drivers.
