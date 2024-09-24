@@ -198,7 +198,7 @@ where
     }
 
     // Add this new method to write to registers
-    fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), I2C::Error> {
+    pub fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), I2C::Error> {
         self.i2c.write(self.addr, &[reg, value])
     }
 }
