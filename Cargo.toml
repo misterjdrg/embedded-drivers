@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["hmc5883l", "adxl345", "l3g4200d", "bmp180", "ssd1327"]
+members = ["hmc5883l", "adxl345", "l3g4200d", "bmp180", "ssd1327", "st7735"]
 
 exclude = ["template"]
 
@@ -17,3 +17,4 @@ categories = ["no-std", "hardware-support", "embedded"]
 embedded-hal = "1.0.0"
 embedded-hal-async = "1.0.0"
 embedded-graphics-core = "0.4.0"
+embedded-graphics = "0.8.1"
