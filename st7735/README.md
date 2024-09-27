@@ -13,7 +13,8 @@ This project is maintained by the embedded-drivers team. Our organization's goal
 
 ## Features
 
-- [List key features of the driver]
+- Display driver using SPI
+- Display driver using async SPI
 
 ## Usage
 
