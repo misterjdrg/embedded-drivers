@@ -168,8 +168,7 @@ where
         let mut buf = [0u8; 6];
 
         // Read 6 bytes starting from DATA_X_MSB
-        self.i2c
-            .write_read(self.addr, &[regs::DATA_X_MSB], &mut buf)?;
+        self.i2c.write_read(self.addr, &[regs::DATA_X_MSB], &mut buf)?;
         self.i2c.write(self.addr, &[regs::DATA_X_MSB])?;
 
         let x = ((buf[0] as i16) << 8) | buf[1] as i16;

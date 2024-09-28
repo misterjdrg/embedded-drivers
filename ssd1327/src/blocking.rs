@@ -1,7 +1,6 @@
 use embedded_hal::digital::OutputPin;
 
-use crate::cmds;
-use crate::{HEIGHT, WIDTH};
+use crate::{cmds, HEIGHT, WIDTH};
 
 /// SSD1327 driver, blocking mode
 ///

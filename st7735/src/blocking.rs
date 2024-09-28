@@ -4,9 +4,7 @@ use embedded_graphics_core::primitives::Rectangle;
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::OutputPin;
 
-use super::cmds;
-use super::DisplaySpec;
-use super::Error;
+use super::{cmds, DisplaySpec, Error};
 
 pub struct ST7735<SPEC, SPI, DC> {
     spi: SPI,
@@ -60,13 +58,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> ST7735
     }
 
     #[inline]
-    fn set_update_window(
-        &mut self,
-        x: u16,
-        y: u16,
-        w: u16,
-        h: u16,
-    ) -> Result<(), Error<SPI::Error>> {
+    fn set_update_window(&mut self, x: u16, y: u16, w: u16, h: u16) -> Result<(), Error<SPI::Error>> {
         let ox = SPEC::OFFSETX + x;
         let oy = SPEC::OFFSETY + y;
 
@@ -123,17 +115,13 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> ST7735
     }
 }
 
-impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> OriginDimensions
-    for ST7735<SPEC, SPI, DC>
-{
+impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> OriginDimensions for ST7735<SPEC, SPI, DC> {
     fn size(&self) -> Size {
         Size::new(SPEC::WIDTH as _, SPEC::HEIGHT as _)
     }
 }
 
-impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> DrawTarget
-    for ST7735<SPEC, SPI, DC>
-{
+impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> DrawTarget for ST7735<SPEC, SPI, DC> {
     type Color = Rgb565;
     type Error = Error<SPI::Error>;
 

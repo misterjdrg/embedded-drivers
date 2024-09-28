@@ -66,16 +66,13 @@ impl<SPI: embedded_hal_async::spi::SpiBus, DC: OutputPin, CS: OutputPin> SSD1327
         self.write_command(&[cmds::SET_COLUMN_ADDRESS, 0x00, WIDTH / 8 * 4 - 1])
             .await;
         // 0x7F
-        self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, HEIGHT - 1])
-            .await;
-        self.write_command(&[cmds::SET_CONTRAST_CURRENT, 0x80])
-            .await;
+        self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, HEIGHT - 1]).await;
+        self.write_command(&[cmds::SET_CONTRAST_CURRENT, 0x80]).await;
 
         // address remap
         self.write_command(&[cmds::SET_REMAP, 0x51]).await;
 
-        self.write_command(&[cmds::SET_DISPLAY_START_LINE, 0x00])
-            .await;
+        self.write_command(&[cmds::SET_DISPLAY_START_LINE, 0x00]).await;
         self.write_command(&[cmds::SET_DISPLAY_OFFSET, 0x00]).await;
 
         self.write_command(&[cmds::SET_MULTIPLEX_RATIO, 0x7F]).await;
@@ -88,17 +85,12 @@ impl<SPI: embedded_hal_async::spi::SpiBus, DC: OutputPin, CS: OutputPin> SSD1327
         self.write_command(&[cmds::SELECT_DEFAULT_LINEAR_GRAY_SCALE_TABLE])
             .await;
 
-        self.write_command(&[cmds::SET_FRONT_CLOCK_DIVIDER, 0x00])
-            .await;
-        self.write_command(&[cmds::FUNCTION_SELECTION_A, 0x01])
-            .await;
-        self.write_command(&[cmds::SET_SECOND_PRECHARGE_PERIOD, 0x08])
-            .await;
+        self.write_command(&[cmds::SET_FRONT_CLOCK_DIVIDER, 0x00]).await;
+        self.write_command(&[cmds::FUNCTION_SELECTION_A, 0x01]).await;
+        self.write_command(&[cmds::SET_SECOND_PRECHARGE_PERIOD, 0x08]).await;
         self.write_command(&[cmds::SET_VCOMH_VOLTAGE, 0x0f]).await;
-        self.write_command(&[cmds::SET_PRECHARGE_VOLTAGE, 0x08])
-            .await;
-        self.write_command(&[cmds::FUNCTION_SELECTION_B, 0x62])
-            .await;
+        self.write_command(&[cmds::SET_PRECHARGE_VOLTAGE, 0x08]).await;
+        self.write_command(&[cmds::FUNCTION_SELECTION_B, 0x62]).await;
         self.write_command(&[cmds::SET_COMMAND_LOCK, 0x12]).await;
         self.write_command(&[cmds::SET_DISPLAY_MODE]).await; // display mode normal
         self.write_command(&[cmds::SET_DISPLAY_ON]).await;

@@ -153,8 +153,7 @@ impl<I2C: I2c> BMP180<I2C> {
     /// Read calibration data from the EEPROM of BMP180.
     pub fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
         let mut buf = [0u8; 22];
-        self.i2c
-            .write_read(self.addr, &[regs::CAL_AC1], &mut buf[..])?;
+        self.i2c.write_read(self.addr, &[regs::CAL_AC1], &mut buf[..])?;
 
         self.calib = CalibrationData::from_raw(&buf);
 
@@ -170,8 +169,7 @@ impl<I2C: I2c> BMP180<I2C> {
         delay.delay_ms(5);
 
         let mut buf = [0u8; 2];
-        self.i2c
-            .write_read(self.addr, &[regs::TEMPDATA], &mut buf)?;
+        self.i2c.write_read(self.addr, &[regs::TEMPDATA], &mut buf)?;
 
         Ok(((buf[0] as i32) << 8) + (buf[1] as i32))
     }
@@ -184,8 +182,7 @@ impl<I2C: I2c> BMP180<I2C> {
         self.mode.wait_conversion(delay);
 
         let mut buf = [0u8; 3];
-        self.i2c
-            .write_read(self.addr, &[regs::PRESSUREDATA], &mut buf)?;
+        self.i2c.write_read(self.addr, &[regs::PRESSUREDATA], &mut buf)?;
 
         let up = ((buf[0] as i32) << 16) + ((buf[1] as i32) << 8) + (buf[2] as i32) >> (8 - oss);
 
@@ -193,10 +190,7 @@ impl<I2C: I2c> BMP180<I2C> {
     }
 
     /// Calculate true temperature, resolution is 0.1C
-    pub fn read_temperature<D: DelayNs>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<f32, Error<I2C::Error>> {
+    pub fn read_temperature<D: DelayNs>(&mut self, delay: &mut D) -> Result<f32, Error<I2C::Error>> {
         let ut = self.read_ut(delay)?;
 
         let x1 = ((ut - self.calib.ac6 as i32) * self.calib.ac5 as i32) >> 15;
@@ -206,10 +200,7 @@ impl<I2C: I2c> BMP180<I2C> {
     }
 
     /// Read temperature and pressure at once
-    pub fn read_measurement<D: DelayNs>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<Measurement, Error<I2C::Error>> {
+    pub fn read_measurement<D: DelayNs>(&mut self, delay: &mut D) -> Result<Measurement, Error<I2C::Error>> {
         let oss = self.mode.oversampling_settings();
 
         let ut = self.read_ut(delay)?;

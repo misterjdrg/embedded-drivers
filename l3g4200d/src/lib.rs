@@ -148,8 +148,7 @@ where
         let mut buf = [0u8; 6];
 
         // Read 6 bytes starting from OUT_X_L register (0x28 | 0x80 for auto-increment)
-        self.i2c
-            .write_read(self.addr, &[regs::OUT_X_L | 0x80], &mut buf)?;
+        self.i2c.write_read(self.addr, &[regs::OUT_X_L | 0x80], &mut buf)?;
 
         // Combine high and low bytes into 16-bit integers
         let x = i16::from_le_bytes([buf[0], buf[1]]);

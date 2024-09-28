@@ -94,9 +94,7 @@ pub struct ST7735<SPEC, SPI, DC> {
     _marker: core::marker::PhantomData<SPEC>,
 }
 
-impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
-    ST7735<SPEC, SPI, DC>
-{
+impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> ST7735<SPEC, SPI, DC> {
     pub fn new(spi: SPI, dc: DC) -> Self {
         Self {
             spi,
@@ -111,15 +109,12 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
         self.send_command(cmds::SLPOUT).await?;
         delay.delay_ms(200);
 
-        self.send_command_data(cmds::FRMCTR1, &[0x01, 0x2C, 0x2D])
-            .await?;
-        self.send_command_data(cmds::FRMCTR2, &[0x01, 0x2C, 0x2D])
-            .await?;
+        self.send_command_data(cmds::FRMCTR1, &[0x01, 0x2C, 0x2D]).await?;
+        self.send_command_data(cmds::FRMCTR2, &[0x01, 0x2C, 0x2D]).await?;
         self.send_command_data(cmds::FRMCTR3, &[0x01, 0x2C, 0x2D, 0x01, 0x2C, 0x2D])
             .await?;
         self.send_command_data(cmds::INVCTR, &[0x07]).await?;
-        self.send_command_data(cmds::PWCTR1, &[0xA2, 0x02, 0x84])
-            .await?;
+        self.send_command_data(cmds::PWCTR1, &[0xA2, 0x02, 0x84]).await?;
         self.send_command_data(cmds::PWCTR2, &[0xC5]).await?;
         self.send_command_data(cmds::PWCTR3, &[0x0A, 0x00]).await?;
         self.send_command_data(cmds::PWCTR4, &[0x8A, 0x2A]).await?;
@@ -134,8 +129,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
 
         // BITS:
         // MY, MX, MV, ML, RGB, MH, D1, D0
-        self.send_command_data(cmds::MADCTL, &[0b0110_10_00])
-            .await?;
+        self.send_command_data(cmds::MADCTL, &[0b0110_10_00]).await?;
 
         self.send_command_data(cmds::COLMOD, &[0x05]).await?; // 16-bit/pixel
         self.send_command(cmds::DISPON).await?;
@@ -146,13 +140,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
     }
 
     #[inline]
-    async fn set_update_window(
-        &mut self,
-        x: u16,
-        y: u16,
-        w: u16,
-        h: u16,
-    ) -> Result<(), Error<SPI::Error>> {
+    async fn set_update_window(&mut self, x: u16, y: u16, w: u16, h: u16) -> Result<(), Error<SPI::Error>> {
         let ox = SPEC::OFFSETX + x;
         let oy = SPEC::OFFSETY + y;
 
@@ -181,18 +169,25 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
     }
 
     pub async fn write_framebuffer(&mut self, data: &[u8]) -> Result<(), Error<SPI::Error>> {
-        self.set_update_window(0, 0, SPEC::WIDTH, SPEC::HEIGHT)
-            .await?;
+        self.set_update_window(0, 0, SPEC::WIDTH, SPEC::HEIGHT).await?;
         self.send_command_data(cmds::RAMWR, data).await?;
         Ok(())
     }
 
-    pub async fn write_pixel(
+    pub async fn write_window_framebuffer(
         &mut self,
         x: u16,
         y: u16,
+        w: u16,
+        h: u16,
         data: &[u8],
     ) -> Result<(), Error<SPI::Error>> {
+        self.set_update_window(x, y, w, h).await?;
+        self.send_command_data(cmds::RAMWR, data).await?;
+        Ok(())
+    }
+
+    pub async fn write_pixel(&mut self, x: u16, y: u16, data: &[u8]) -> Result<(), Error<SPI::Error>> {
         self.set_update_window(x, y, 1, 1).await?;
 
         self.send_command_data(cmds::RAMWR, data).await?;
@@ -218,8 +213,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin>
     }
 
     pub async fn clear(&mut self, color: Rgb565) -> Result<(), Error<SPI::Error>> {
-        self.set_update_window(0, 0, SPEC::WIDTH, SPEC::HEIGHT)
-            .await?;
+        self.set_update_window(0, 0, SPEC::WIDTH, SPEC::HEIGHT).await?;
 
         self.send_command(cmds::RAMWR).await?;
         for _ in 0..((SPEC::WIDTH as u16) * (SPEC::HEIGHT as u16)) {
