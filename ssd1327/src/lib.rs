@@ -1,4 +1,26 @@
 //! Driver for SSD1327.
+//!
+//! # Examples
+//!
+//! ```
+//! use embedded_graphics::framebuffer::Framebuffer;
+//!
+//! let dc = Output::new(r.dc, Level::Low, Default::default());
+//! let cs = Output::new(r.cs, Level::High, Default::default());
+//!
+//! let mut config = hal::spi::Config::default();
+//! config.frequency = Hertz::mhz(20);
+//! let spi = hal::spi::Spi::new_txonly(r.spi1, r.sclk, r.mosi, r.dma_ch0, config);
+//! let spi_bus = embassy_sync::mutex::Mutex::<NoopRawMutex, _>::new(spi);
+//! let spi_dev = embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice::new(&spi_bus, cs);
+//! let mut ssd1327 = edrv_ssd1327::SSD1327::new(spi_dev, dc);
+//! ssd1327.init().await.unwrap();
+//! let mut fb = Framebuffer::<Gray4, _, LittleEndian, 128, 128, { 128 * 128 / 2 }>::new();
+//!
+//! // Draw something on the framebuffer
+//!
+//! ssd1327.write_framebuffer(fb.data()).await.unwrap();
+//! ```
 
 #![no_std]
 
@@ -40,6 +62,17 @@ pub mod cmds {
 pub(crate) const WIDTH: u8 = 128;
 pub(crate) const HEIGHT: u8 = 128;
 
+#[derive(Debug)]
+pub enum Error<BusError> {
+    Bus(BusError),
+}
+
+impl<E> From<E> for Error<E> {
+    fn from(e: E) -> Self {
+        Error::Bus(e)
+    }
+}
+
 /// SSD1327 driver
 ///
 /// Framebuffer format:
@@ -49,76 +82,75 @@ pub(crate) const HEIGHT: u8 = 128;
 /// // or
 /// let mut fb = Framebuffer::<Gray4, _, LittleEndian, 128, 128, { 128 * 128 / 2 }>::new();
 /// ```
-pub struct SSD1327<SPI: embedded_hal_async::spi::SpiBus, DC: OutputPin, CS: OutputPin> {
+pub struct SSD1327<SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> {
     spi: SPI,
     dc: DC,
-    cs: CS,
 }
 
-impl<SPI: embedded_hal_async::spi::SpiBus, DC: OutputPin, CS: OutputPin> SSD1327<SPI, DC, CS> {
-    pub fn new(spi: SPI, cs: CS, dc: DC) -> Self {
-        Self { spi, cs, dc }
+impl<SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> SSD1327<SPI, DC> {
+    pub fn new(spi: SPI, dc: DC) -> Self {
+        Self { spi, dc }
     }
 
-    pub async fn init(&mut self) {
-        self.write_command(&[cmds::SET_DISPLAY_OFF]).await;
+    pub async fn init(&mut self) -> Result<(), Error<SPI::Error>> {
+        self.write_command(&[cmds::SET_DISPLAY_OFF]).await?;
         // 0x3F
         self.write_command(&[cmds::SET_COLUMN_ADDRESS, 0x00, WIDTH / 8 * 4 - 1])
-            .await;
+            .await?;
         // 0x7F
-        self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, HEIGHT - 1]).await;
-        self.write_command(&[cmds::SET_CONTRAST_CURRENT, 0x80]).await;
+        self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, HEIGHT - 1]).await?;
+        self.write_command(&[cmds::SET_CONTRAST_CURRENT, 0x80]).await?;
 
         // address remap
-        self.write_command(&[cmds::SET_REMAP, 0x51]).await;
+        self.write_command(&[cmds::SET_REMAP, 0x51]).await?;
 
-        self.write_command(&[cmds::SET_DISPLAY_START_LINE, 0x00]).await;
-        self.write_command(&[cmds::SET_DISPLAY_OFFSET, 0x00]).await;
+        self.write_command(&[cmds::SET_DISPLAY_START_LINE, 0x00]).await?;
+        self.write_command(&[cmds::SET_DISPLAY_OFFSET, 0x00]).await?;
 
-        self.write_command(&[cmds::SET_MULTIPLEX_RATIO, 0x7F]).await;
-        self.write_command(&[cmds::SET_PHASE_LENGTH, 0x11]).await; // gray scale tune
+        self.write_command(&[cmds::SET_MULTIPLEX_RATIO, 0x7F]).await?;
+        self.write_command(&[cmds::SET_PHASE_LENGTH, 0x11]).await?; // gray scale tune
 
         // gamma setting
         // 0xb8: SET_GRAY_SCALE_TABLE, [u8; 15]
         // 0xb9: SET_DEFAULT_LINEAR_GRAY_SCALE_TABLE
         //self.send_cmd_data(0xb8, &[1,2,30,40,5,6,7,8,9,10,11,12,13,14,0b11111])?;
         self.write_command(&[cmds::SELECT_DEFAULT_LINEAR_GRAY_SCALE_TABLE])
-            .await;
+            .await?;
 
-        self.write_command(&[cmds::SET_FRONT_CLOCK_DIVIDER, 0x00]).await;
-        self.write_command(&[cmds::FUNCTION_SELECTION_A, 0x01]).await;
-        self.write_command(&[cmds::SET_SECOND_PRECHARGE_PERIOD, 0x08]).await;
-        self.write_command(&[cmds::SET_VCOMH_VOLTAGE, 0x0f]).await;
-        self.write_command(&[cmds::SET_PRECHARGE_VOLTAGE, 0x08]).await;
-        self.write_command(&[cmds::FUNCTION_SELECTION_B, 0x62]).await;
-        self.write_command(&[cmds::SET_COMMAND_LOCK, 0x12]).await;
-        self.write_command(&[cmds::SET_DISPLAY_MODE]).await; // display mode normal
-        self.write_command(&[cmds::SET_DISPLAY_ON]).await;
+        self.write_command(&[cmds::SET_FRONT_CLOCK_DIVIDER, 0x00]).await?;
+        self.write_command(&[cmds::FUNCTION_SELECTION_A, 0x01]).await?;
+        self.write_command(&[cmds::SET_SECOND_PRECHARGE_PERIOD, 0x08]).await?;
+        self.write_command(&[cmds::SET_VCOMH_VOLTAGE, 0x0f]).await?;
+        self.write_command(&[cmds::SET_PRECHARGE_VOLTAGE, 0x08]).await?;
+        self.write_command(&[cmds::FUNCTION_SELECTION_B, 0x62]).await?;
+        self.write_command(&[cmds::SET_COMMAND_LOCK, 0x12]).await?;
+        self.write_command(&[cmds::SET_DISPLAY_MODE]).await?; // display mode normal
+        self.write_command(&[cmds::SET_DISPLAY_ON]).await?;
 
-        self.write_command(&[cmds::DEACTIVATE_SCROLL]).await;
+        self.write_command(&[cmds::DEACTIVATE_SCROLL]).await?;
+
+        Ok(())
     }
 
-    pub async fn write_framebuffer(&mut self, fb: &[u8]) {
-        //self.write_command(&[cmds::SET_COLUMN_ADDRESS, 0x00, 0x3F])
-        //    .await;
-        //self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, 0x7F])
-        //    .await;
-        self.write_data(fb).await;
+    pub async fn write_framebuffer(&mut self, fb: &[u8]) -> Result<(), Error<SPI::Error>> {
+        // self.write_command(&[cmds::SET_COLUMN_ADDRESS, 0x00, 0x3F])
+        //    .await?;
+        // self.write_command(&[cmds::SET_ROW_ADDRESS, 0x00, 0x7F])
+        //    .await?;
+        self.write_data(fb).await?;
+        Ok(())
     }
 
-    async fn write_command(&mut self, cmd: &[u8]) {
-        self.dc.set_low().unwrap();
-        self.cs.set_low().unwrap();
-        self.spi.write(cmd).await.unwrap();
-        self.cs.set_high().unwrap();
+    async fn write_command(&mut self, cmd: &[u8]) -> Result<(), Error<SPI::Error>> {
+        let _ = self.dc.set_low().unwrap();
+        self.spi.write(cmd).await?;
+        Ok(())
     }
 
-    async fn write_data(&mut self, data: &[u8]) {
-        self.dc.set_high().unwrap();
-        self.cs.set_low().unwrap();
-        self.spi.write(data).await.unwrap();
-        self.cs.set_high().unwrap();
-
-        self.dc.set_low().unwrap();
+    async fn write_data(&mut self, data: &[u8]) -> Result<(), Error<SPI::Error>> {
+        let _ = self.dc.set_high().unwrap();
+        self.spi.write(data).await?;
+        let _ = self.dc.set_low();
+        Ok(())
     }
 }
