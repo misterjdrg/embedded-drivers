@@ -1,8 +1,7 @@
 //! Driver for L3G4200D.
-
 #![no_std]
 
-pub const ADDRESS: u8 = 0x69;
+pub mod blocking;
 
 pub mod regs {
     pub const WHO_AM_I: u8 = 0x0F;
@@ -37,6 +36,8 @@ pub mod regs {
     pub const INT1_DURATION: u8 = 0x38;
 }
 
+pub const ADDRESS: u8 = 0x69;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Scale {
@@ -65,8 +66,8 @@ pub enum DataRate {
 }
 
 #[derive(Debug)]
-pub enum Error<IE> {
-    Bus(IE),
+pub enum Error<E> {
+    Bus(E),
     InvalidDevice,
 }
 
@@ -76,8 +77,11 @@ impl<E> From<E> for Error<E> {
     }
 }
 
+/// Configuration options for the L3G4200D
 pub struct Config {
+    /// Full scale selection
     pub scale: Scale,
+    /// Output data rate & bandwidth
     pub data_rate: DataRate,
 }
 
@@ -90,16 +94,13 @@ impl Default for Config {
     }
 }
 
-pub struct L3G4200D<I2C> {
+pub struct L3G4200D<I2C: embedded_hal_async::i2c::I2c> {
     i2c: I2C,
     addr: u8,
     dps_per_digit: f32,
 }
 
-impl<I2C> L3G4200D<I2C>
-where
-    I2C: embedded_hal::i2c::I2c,
-{
+impl<I2C: embedded_hal_async::i2c::I2c> L3G4200D<I2C> {
     pub fn new(i2c: I2C, addr: u8) -> Self {
         Self {
             i2c,
@@ -112,24 +113,24 @@ where
         Self::new(i2c, ADDRESS)
     }
 
-    pub fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
-        if self.read_reg(regs::WHO_AM_I)? != 0xD3 {
+    pub async fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
+        if self.read_reg(regs::WHO_AM_I).await? != 0xD3 {
             return Err(Error::InvalidDevice);
         }
 
         // Enable all axis and setup normal mode + Output Data Range & Bandwidth
         let mut reg1 = 0x0F; // Enable all axis and setup normal mode
         reg1 |= (config.data_rate as u8) << 4; // Set output data rate & bandwidth
-        self.write_reg(regs::CTRL_REG1, reg1)?;
+        self.write_reg(regs::CTRL_REG1, reg1).await?;
 
         // Disable high pass filter
-        self.write_reg(regs::CTRL_REG2, 0x00)?;
+        self.write_reg(regs::CTRL_REG2, 0x00).await?;
 
         // Generate data ready interrupt on INT2
-        self.write_reg(regs::CTRL_REG3, 0x08)?;
+        self.write_reg(regs::CTRL_REG3, 0x08).await?;
 
         // Set full scale selection in continuous mode
-        self.write_reg(regs::CTRL_REG4, (config.scale as u8) << 4)?;
+        self.write_reg(regs::CTRL_REG4, (config.scale as u8) << 4).await?;
 
         // Set dpsPerDigit based on scale
         self.dps_per_digit = match config.scale {
@@ -139,16 +140,18 @@ where
         };
 
         // Boot in normal mode, disable FIFO, HPF disabled
-        self.write_reg(regs::CTRL_REG5, 0x00)?;
+        self.write_reg(regs::CTRL_REG5, 0x00).await?;
 
         Ok(())
     }
 
-    pub fn read_raw(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
+    pub async fn read_raw(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
         let mut buf = [0u8; 6];
 
         // Read 6 bytes starting from OUT_X_L register (0x28 | 0x80 for auto-increment)
-        self.i2c.write_read(self.addr, &[regs::OUT_X_L | 0x80], &mut buf)?;
+        self.i2c
+            .write_read(self.addr, &[regs::OUT_X_L | 0x80], &mut buf)
+            .await?;
 
         // Combine high and low bytes into 16-bit integers
         let x = i16::from_le_bytes([buf[0], buf[1]]);
@@ -158,8 +161,8 @@ where
         Ok((x, y, z))
     }
 
-    pub fn read_normalized(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
-        let (x, y, z) = self.read_raw()?;
+    pub async fn read_normalized(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
+        let (x, y, z) = self.read_raw().await?;
 
         // Apply normalization using dps_per_digit
         let x_norm = (x as f32 * self.dps_per_digit) as i16;
@@ -169,14 +172,15 @@ where
         Ok((x_norm, y_norm, z_norm))
     }
 
-    pub fn read_reg(&mut self, reg: u8) -> Result<u8, I2C::Error> {
+    pub async fn read_reg(&mut self, reg: u8) -> Result<u8, Error<I2C::Error>> {
         let mut buf = [0];
-        self.i2c.write_read(self.addr, &[reg], &mut buf)?;
+        self.i2c.write_read(self.addr, &[reg], &mut buf).await?;
         Ok(buf[0])
     }
 
     // Add this new method to write to registers
-    pub fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), I2C::Error> {
-        self.i2c.write(self.addr, &[reg, value])
+    pub async fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), Error<I2C::Error>> {
+        self.i2c.write(self.addr, &[reg, value]).await?;
+        Ok(())
     }
 }

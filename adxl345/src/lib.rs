@@ -2,8 +2,7 @@
 
 #![no_std]
 
-pub const PRIMARY_ADDRESS: u8 = 0x53;
-pub const SECONDARY_ADDRESS: u8 = 0x1D;
+pub mod blocking;
 
 /// Register map
 pub mod regs {
@@ -38,6 +37,9 @@ pub mod regs {
     pub const FIFO_CTL: u8 = 0x38;
     pub const FIFO_STATUS: u8 = 0x39;
 }
+
+pub const PRIMARY_ADDRESS: u8 = 0x53;
+pub const SECONDARY_ADDRESS: u8 = 0x1D;
 
 #[derive(Debug)]
 pub enum Error<IE> {
@@ -105,16 +107,13 @@ impl Default for Config {
 //
 // This struct encapsulates the I2C interface, the device address, and the least significant bit (LSB) scale factor.
 // It provides methods to initialize the accelerometer, read raw acceleration data, and read acceleration values in g-force.
-pub struct ADXL345<I2C> {
+pub struct ADXL345<I2C: embedded_hal_async::i2c::I2c> {
     i2c: I2C,
     addr: u8,
     lsb_scale: f32,
 }
 
-impl<I2C> ADXL345<I2C>
-where
-    I2C: embedded_hal::i2c::I2c,
-{
+impl<I2C: embedded_hal_async::i2c::I2c> ADXL345<I2C> {
     pub fn new(i2c: I2C, addr: u8) -> Self {
         Self {
             i2c,
@@ -132,23 +131,23 @@ where
         Self::new(i2c, SECONDARY_ADDRESS)
     }
 
-    pub fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
-        let id = self.read_reg(regs::DEVID)?;
+    pub async fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
+        let id = self.read_reg(regs::DEVID).await?;
         if id != 0xE5 {
             return Err(Error::InvalidDevice);
         }
 
-        self.write_reg(regs::POWER_CTL, 0)?; // Wake up
-        self.write_reg(regs::POWER_CTL, 16)?; // Auto-sleep
-        self.write_reg(regs::POWER_CTL, 8)?; // Measure
+        self.write_reg(regs::POWER_CTL, 0).await?; // Wake up
+        self.write_reg(regs::POWER_CTL, 16).await?; // Auto-sleep
+        self.write_reg(regs::POWER_CTL, 8).await?; // Measure
 
         // Set data rate and range
         let mut data_format = (config.range as u8) & 0x03;
         data_format |= 0b100; // Set bit 2 to enable left justified mode
-        self.write_reg(regs::DATA_FORMAT, data_format)?;
+        self.write_reg(regs::DATA_FORMAT, data_format).await?;
 
         let bw_rate = (config.rate as u8) & 0x0F; // Set rate
-        self.write_reg(regs::BW_RATE, bw_rate)?;
+        self.write_reg(regs::BW_RATE, bw_rate).await?;
 
         // Set scale factor based on the range
         self.lsb_scale = match config.range {
@@ -176,11 +175,10 @@ where
     /// # Errors
     ///
     /// Returns an `Error` if the I2C read operation fails.
-
-    pub fn read_raw(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
+    pub async fn read_raw(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
         let mut buf = [0; 6];
 
-        self.i2c.write_read(self.addr, &[regs::DATAX0], &mut buf)?;
+        self.i2c.write_read(self.addr, &[regs::DATAX0], &mut buf).await?;
 
         let x = i16::from_le_bytes([buf[0], buf[1]]);
         let y = i16::from_le_bytes([buf[2], buf[3]]);
@@ -193,8 +191,8 @@ where
     /// The scaling factor is set during initialization based on the configured range.
     ///
     /// Returns a tuple of (x, y, z) acceleration values in g-force.
-    pub fn read_normalized(&mut self) -> Result<(f32, f32, f32), Error<I2C::Error>> {
-        let (x_raw, y_raw, z_raw) = self.read_raw()?;
+    pub async fn read_normalized(&mut self) -> Result<(f32, f32, f32), Error<I2C::Error>> {
+        let (x_raw, y_raw, z_raw) = self.read_raw().await?;
 
         // Convert raw values to g-force
         // The scaling factor is set during initialization based on the configured range
@@ -205,14 +203,15 @@ where
         Ok((x, y, z))
     }
 
-    pub fn read_reg(&mut self, reg: u8) -> Result<u8, I2C::Error> {
+    pub async fn read_reg(&mut self, reg: u8) -> Result<u8, Error<I2C::Error>> {
         let mut buf = [0];
-        self.i2c.write_read(self.addr, &[reg], &mut buf)?;
+        self.i2c.write_read(self.addr, &[reg], &mut buf).await?;
         Ok(buf[0])
     }
 
     // Add this new method to write to registers
-    pub fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), I2C::Error> {
-        self.i2c.write(self.addr, &[reg, value])
+    pub async fn write_reg(&mut self, reg: u8, value: u8) -> Result<(), Error<I2C::Error>> {
+        self.i2c.write(self.addr, &[reg, value]).await?;
+        Ok(())
     }
 }
