@@ -93,6 +93,12 @@ impl<SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> SSD1327<SPI, DC> {
         Ok(())
     }
 
+    pub fn clear(&mut self, color_byte: u8) -> Result<(), Error<SPI::Error>> {
+        let buf = [color_byte; 128 * 128 / 2];
+        self.write_framebuffer(&buf)?;
+        Ok(())
+    }
+
     fn write_command(&mut self, cmd: &[u8]) -> Result<(), Error<SPI::Error>> {
         let _ = self.dc.set_low();
         self.spi.write(cmd)?;
