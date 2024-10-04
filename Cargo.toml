@@ -10,7 +10,7 @@ edition = "2021"
 authors = ["Andelf <andelf@gmail.com>"]
 repository = "https://github.com/embedded-drivers/embedded-drivers"
 homepage = "https://github.com/embedded-drivers/embedded-drivers"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 categories = ["no-std", "hardware-support", "embedded"]
 
 [workspace.dependencies]
