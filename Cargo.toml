@@ -8,6 +8,7 @@ members = [
     "bme280",
     "ssd1327",
     "st7735",
+    "sht20",
 ]
 
 exclude = ["template"]
