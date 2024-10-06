@@ -122,6 +122,24 @@ pub struct Measurements {
     pub humidity: u32,
 }
 
+impl Measurements {
+    pub fn temperature_celsius(&self) -> f32 {
+        self.temperature as f32 / 100.0
+    }
+
+    pub fn pressure_hpa(&self) -> f32 {
+        self.pressure as f32 / 100.0 / 100.0
+    }
+
+    pub fn pressure_pa(&self) -> u32 {
+        self.pressure / 100
+    }
+
+    pub fn humidity_percent(&self) -> f32 {
+        self.humidity as f32 / 100.0
+    }
+}
+
 // - MARK: Async driver
 
 /// Async BME280 driver, compatible with BMP280
@@ -280,8 +298,9 @@ fn convert_temperature(adc_t: i32, calib_data: &CalibrationData) -> (i32, i32) {
 
 /// Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits).
 /// Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa
+// NOTE: i32 overflows
 #[inline]
-fn convert_pressure(adc_p: i32, t_fine: i32, calib_data: &CalibrationData) -> i32 {
+fn convert_pressure(adc_p: i32, t_fine: i32, calib_data: &CalibrationData) -> i64 {
     let mut var1 = t_fine as i64 - 128000;
     let mut var2 = var1 * var1 * calib_data.dig_p6 as i64;
     var2 += (var1 * calib_data.dig_p5 as i64) << 17;
@@ -301,7 +320,7 @@ fn convert_pressure(adc_p: i32, t_fine: i32, calib_data: &CalibrationData) -> i3
         p
     };
 
-    p as i32
+    p
 }
 
 /// Returns Q22.10 format
