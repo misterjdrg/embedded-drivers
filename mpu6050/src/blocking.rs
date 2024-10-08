@@ -1,4 +1,4 @@
-use crate::{regs, AccelRange, Config, Error, GyroRange, ADDRESS};
+use crate::{regs, AccelRange, Config, Error, GyroRange, PRIMARY_ADDRESS};
 
 pub struct MPU6050<I2C: embedded_hal::i2c::I2c> {
     addr: u8,
@@ -18,7 +18,7 @@ impl<I2C: embedded_hal::i2c::I2c> MPU6050<I2C> {
     }
 
     pub fn new_primary(i2c: I2C) -> Self {
-        Self::new(i2c, ADDRESS)
+        Self::new(i2c, PRIMARY_ADDRESS)
     }
 
     pub fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {

@@ -4,7 +4,8 @@
 
 pub mod blocking;
 
-pub const ADDRESS: u8 = 0x68;
+pub const PRIMARY_ADDRESS: u8 = 0x68;
+pub const SECONDARY_ADDRESS: u8 = 0x69;
 
 pub mod regs {
     pub const XG_OFFS_TC: u8 = 0x00; //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
@@ -230,7 +231,7 @@ impl<I2C: embedded_hal_async::i2c::I2c> MPU6050<I2C> {
     }
 
     pub fn new_primary(i2c: I2C) -> Self {
-        Self::new(i2c, ADDRESS)
+        Self::new(i2c, PRIMARY_ADDRESS)
     }
 
     pub async fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
