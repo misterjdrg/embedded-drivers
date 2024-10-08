@@ -1,7 +1,7 @@
 [package]
 name = "edrv-mpu6050"
 documentation = "https://docs.rs/edrv-mpu6050"
-description = "Driver for MPU6050, maintained by the embedded-drivers team"
+description = "Driver for MPU6050, MPU6000, MPU6500, maintained by the embedded-drivers team"
 keywords = ["no-std", "embedded", "embedded-hal-driver"]
 readme = "README.md"
 version.workspace = true

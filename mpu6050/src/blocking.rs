@@ -1,4 +1,4 @@
-use crate::{regs, AccelRange, Config, Error, GyroRange, PRIMARY_ADDRESS};
+use crate::{consts, regs, AccelRange, Config, Error, GyroRange, PRIMARY_ADDRESS};
 
 pub struct MPU6050<I2C: embedded_hal::i2c::I2c> {
     addr: u8,
@@ -23,7 +23,11 @@ impl<I2C: embedded_hal::i2c::I2c> MPU6050<I2C> {
 
     pub fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
         let who_am_i = self.read_reg(regs::WHO_AM_I)?;
-        if who_am_i != 0x68 {
+        if who_am_i != consts::DEV_ID_MPU6050
+            && who_am_i != consts::DEV_ID_MPU6500
+            && who_am_i != consts::DEV_ID_MPU9250
+            && who_am_i != consts::DEV_ID_MPU9255
+        {
             return Err(Error::InvalidDevice);
         }
 

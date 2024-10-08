@@ -120,6 +120,13 @@ pub mod regs {
     pub const WHO_AM_I: u8 = 0x75;
 }
 
+pub mod consts {
+    pub const DEV_ID_MPU6050: u8 = 0x68;
+    pub const DEV_ID_MPU6500: u8 = 0x70;
+    pub const DEV_ID_MPU9250: u8 = 0x71;
+    pub const DEV_ID_MPU9255: u8 = 0x73;
+}
+
 #[derive(Debug)]
 pub enum Error<E> {
     Bus(E),
@@ -236,7 +243,11 @@ impl<I2C: embedded_hal_async::i2c::I2c> MPU6050<I2C> {
 
     pub async fn init(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
         let who_am_i = self.read_reg(regs::WHO_AM_I).await?;
-        if who_am_i != 0x68 {
+        if who_am_i != consts::DEV_ID_MPU6050
+            && who_am_i != consts::DEV_ID_MPU6500
+            && who_am_i != consts::DEV_ID_MPU9250
+            && who_am_i != consts::DEV_ID_MPU9255
+        {
             return Err(Error::InvalidDevice);
         }
 
