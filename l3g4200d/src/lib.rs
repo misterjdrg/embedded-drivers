@@ -161,7 +161,8 @@ impl<I2C: embedded_hal_async::i2c::I2c> L3G4200D<I2C> {
         Ok((x, y, z))
     }
 
-    pub async fn read_normalized(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
+    /// Reads the raw gyro data from the sensor.
+    pub async fn read_gyro(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
         let (x, y, z) = self.read_raw().await?;
 
         // Apply normalization using dps_per_digit

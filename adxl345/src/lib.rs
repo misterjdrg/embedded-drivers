@@ -191,7 +191,7 @@ impl<I2C: embedded_hal_async::i2c::I2c> ADXL345<I2C> {
     /// The scaling factor is set during initialization based on the configured range.
     ///
     /// Returns a tuple of (x, y, z) acceleration values in g-force.
-    pub async fn read_normalized(&mut self) -> Result<(f32, f32, f32), Error<I2C::Error>> {
+    pub async fn read_accel(&mut self) -> Result<(f32, f32, f32), Error<I2C::Error>> {
         let (x_raw, y_raw, z_raw) = self.read_raw().await?;
 
         // Convert raw values to g-force

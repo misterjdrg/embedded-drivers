@@ -65,7 +65,8 @@ impl<I2C: embedded_hal::i2c::I2c> L3G4200D<I2C> {
         Ok((x, y, z))
     }
 
-    pub fn read_normalized(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
+    /// Reads the normalized angular rate data from the sensor.
+    pub fn read_gyro(&mut self) -> Result<(i16, i16, i16), Error<I2C::Error>> {
         let (x, y, z) = self.read_raw()?;
 
         // Apply normalization using dps_per_digit
