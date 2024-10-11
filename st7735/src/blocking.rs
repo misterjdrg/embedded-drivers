@@ -21,7 +21,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> ST7735
         }
     }
 
-    pub fn init<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), Error<SPI::Error>> {
+    pub fn init(&mut self, mut delay: impl DelayNs) -> Result<(), Error<SPI::Error>> {
         self.send_command(cmds::SWRESET)?;
 
         delay.delay_ms(20);

@@ -103,7 +103,7 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> 
         }
     }
 
-    pub async fn init<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), Error<SPI::Error>> {
+    pub async fn init(&mut self, mut delay: impl DelayNs) -> Result<(), Error<SPI::Error>> {
         self.send_command(cmds::SWRESET).await?;
         delay.delay_ms(20);
         self.send_command(cmds::SLPOUT).await?;

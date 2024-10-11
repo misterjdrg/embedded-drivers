@@ -42,7 +42,7 @@ impl<I2C: embedded_hal::i2c::I2c> BMP180<I2C> {
     }
 
     /// read uncompensated temperature value
-    pub fn read_raw_temperature<D: DelayNs>(&mut self, delay: &mut D) -> Result<i32, Error<I2C::Error>> {
+    pub fn read_raw_temperature(&mut self, mut delay: impl DelayNs) -> Result<i32, Error<I2C::Error>> {
         self.write_reg(regs::CONTROL, cmds::READTEMPCMD)?;
         delay.delay_ms(5);
 
@@ -54,7 +54,7 @@ impl<I2C: embedded_hal::i2c::I2c> BMP180<I2C> {
 
     /// read uncompensated pressure value
     #[inline]
-    pub fn read_raw_pressure<D: DelayNs>(&mut self, delay: &mut D) -> Result<i32, Error<I2C::Error>> {
+    pub fn read_raw_pressure(&mut self, mut delay: impl DelayNs) -> Result<i32, Error<I2C::Error>> {
         let oss = self.mode.oversampling_settings();
         self.write_reg(regs::CONTROL, cmds::READPRESSURECMD + (oss << 6))?;
         delay.delay_ms(self.mode.conversion_delay_in_ms());
@@ -68,16 +68,16 @@ impl<I2C: embedded_hal::i2c::I2c> BMP180<I2C> {
     }
 
     /// Calculate true temperature, resolution is 0.1C
-    pub fn read_temperature<D: DelayNs>(&mut self, delay: &mut D) -> Result<f32, Error<I2C::Error>> {
+    pub fn read_temperature(&mut self, delay: impl DelayNs) -> Result<f32, Error<I2C::Error>> {
         let ut = self.read_raw_temperature(delay)?;
 
         Ok(super::convert_temperature(ut, &self.calib))
     }
 
     /// Read temperature and pressure at once
-    pub fn read_measurement<D: DelayNs>(&mut self, delay: &mut D) -> Result<Measurement, Error<I2C::Error>> {
-        let ut = self.read_raw_temperature(delay)?;
-        let up = self.read_raw_pressure(delay)?;
+    pub fn read_measurement(&mut self, mut delay: impl DelayNs) -> Result<Measurement, Error<I2C::Error>> {
+        let ut = self.read_raw_temperature(&mut delay)?;
+        let up = self.read_raw_pressure(&mut delay)?;
 
         let measure = super::convert_measurement(up, ut, &self.calib, self.mode);
 
@@ -85,14 +85,14 @@ impl<I2C: embedded_hal::i2c::I2c> BMP180<I2C> {
     }
 
     /// Calculate true pressure, in Pa
-    pub fn read_pressure<D: DelayNs>(&mut self, delay: &mut D) -> Result<i32, Error<I2C::Error>> {
+    pub fn read_pressure(&mut self, delay: impl DelayNs) -> Result<i32, Error<I2C::Error>> {
         self.read_measurement(delay).map(|m| m.pressure)
     }
 
     /// Calculate absolute altitude
-    pub fn calculate_altitude<D: DelayNs>(
+    pub fn calculate_altitude(
         &mut self,
-        delay: &mut D,
+        delay: impl DelayNs,
         sealevel_pressure: f32,
     ) -> Result<f32, Error<I2C::Error>> {
         let pa = self.read_pressure(delay)? as f32;
@@ -100,9 +100,9 @@ impl<I2C: embedded_hal::i2c::I2c> BMP180<I2C> {
     }
 
     /// Calculate pressure at sea level
-    pub fn calculate_sealevel_pressure<D: DelayNs>(
+    pub fn calculate_sealevel_pressure(
         &mut self,
-        delay: &mut D,
+        delay: impl DelayNs,
         altitude_m: f32,
     ) -> Result<u32, Error<I2C::Error>> {
         let pressure = self.read_pressure(delay)? as f32;
