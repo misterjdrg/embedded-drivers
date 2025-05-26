@@ -193,15 +193,22 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> 
         self.send_command_data(cmds::RAMWR, data).await?;
         Ok(())
     }
+    fn begin_command(&mut self) {
+        let _ = self.dc.set_low();
+    }
+    fn begin_data(&mut self) {
+        let _ = self.dc.set_high();
+    }
+
 
     async fn send_command(&mut self, cmd: u8) -> Result<(), Error<SPI::Error>> {
-        let _ = self.dc.set_low(); // ignore any io errors
+        self.begin_command();
         self.spi.write(&[cmd]).await?;
         Ok(())
     }
 
     async fn send_data(&mut self, data: &[u8]) -> Result<(), Error<SPI::Error>> {
-        let _ = self.dc.set_high(); // ignore any io errors
+        self.begin_data();
         self.spi.write(data).await?;
         Ok(())
     }
@@ -224,11 +231,13 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal_async::spi::SpiDevice, DC: OutputPin> 
             cc[0],cc[1],cc[0],cc[1],
         ];
         self.send_command(cmds::RAMWR).await?;
+
+        self.begin_data();
         for _ in 0..(pixel_num/8) {
-            self.send_data(&buf).await?;
+            self.spi.write(&buf).await?;
         };
         for _ in 0..(pixel_num%8) {
-            self.send_data(&cc).await?;
+            self.spi.write(&cc).await?;
         }
         Ok(())
     }

@@ -95,15 +95,20 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> ST7735
         self.send_command_data(cmds::RAMWR, data)?;
         Ok(())
     }
-
-    fn send_command(&mut self, cmd: u8) -> Result<(), Error<SPI::Error>> {
+    fn begin_command(&mut self) {
         let _ = self.dc.set_low();
+    }
+    fn begin_data(&mut self) {
+        let _ = self.dc.set_high();
+    }
+    fn send_command(&mut self, cmd: u8) -> Result<(), Error<SPI::Error>> {
+        self.begin_command();
         self.spi.write(&[cmd])?;
         Ok(())
     }
 
     fn send_data(&mut self, data: &[u8]) -> Result<(), Error<SPI::Error>> {
-        let _ = self.dc.set_high();
+        self.begin_data();
         self.spi.write(data)?;
         Ok(())
     }
@@ -151,11 +156,13 @@ impl<SPEC: DisplaySpec, SPI: embedded_hal::spi::SpiDevice, DC: OutputPin> DrawTa
             cc[0],cc[1],cc[0],cc[1],
         ];
         self.send_command(cmds::RAMWR)?;
+
+        self.begin_data();
         for _ in 0..(pixel_num/8) {
-            self.send_data(&buf)?;
+            self.spi.write(&buf)?;
         };
         for _ in 0..(pixel_num%8) {
-            self.send_data(&cc)?;
+            self.spi.write(&cc)?;
         }
         Ok(())
     }
